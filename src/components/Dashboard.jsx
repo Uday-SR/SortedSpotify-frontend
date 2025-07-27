@@ -29,7 +29,7 @@ function Dashboard() {
     if (!refreshToken) return;
 
     const interval = setInterval(() => {
-      fetch(`http://localhost:2000/refresh_token?refresh_token=${refreshToken}`)
+      fetch(`https://your-backend.vercel.app/refresh_token?refresh_token=${refreshToken}`)
         .then(res => res.json())
         .then(data => {
           if (data.access_token) {

@@ -16,7 +16,7 @@ function SignUp() {
   };
   
   const handleSpotifyLogin = () => {
-    window.location.href = "http://localhost:2000/login"
+    window.location.href = "https://your-backend.vercel.app/login";
   }
 
   const navigate = useNavigate();

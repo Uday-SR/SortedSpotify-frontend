@@ -5,7 +5,7 @@ export const getRefreshToken = async () => {
     return;
   }
 
-  const url = "http://localhost:2000/refresh_token";
+  const url = "https://your-backend.vercel.app/refresh_token";
 
   try {
     const res = await fetch(`${url}?refresh_token=${refreshToken}`);
