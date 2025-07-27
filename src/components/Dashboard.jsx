@@ -7,6 +7,12 @@ function Dashboard() {
   const [playlists, setPlaylists] = useState([]);
   const navigate = useNavigate();
 
+  const logout = () => {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    navigate("/signup");
+  };
+
   // Step 1: Extract tokens from URL or localStorage
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -49,23 +55,42 @@ function Dashboard() {
   useEffect(() => {
     if (!accessToken) return;
 
-    fetch("https://api.spotify.com/v1/me/playlists", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
-    })
-      .then(res => res.json())
-      .then(data => {
+    const fetchPlaylists = async () => {
+      try {
+        const res = await fetch("https://api.spotify.com/v1/me/playlists", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        });
+
+        if (res.status === 401 && refreshToken) {
+      // Try refreshing token
+          const refreshRes = await fetch(`https://your-backend.vercel.app/refresh_token?refresh_token=${refreshToken}`);
+          const data = await refreshRes.json();
+          if (data.access_token) {
+            localStorage.setItem("access_token", data.access_token);
+            setAccessToken(data.access_token);
+          } else {
+            logout(); // failed refresh
+          }
+          return;
+        }
+
+        const data = await res.json();
         setPlaylists(data.items || []);
-      })
-      .catch(err => {
+      } catch (err) {
         console.error("Error fetching playlists:", err);
-      });
+      }
+    };
+
+    fetchPlaylists();
+
   }, [accessToken]);
 
   return (
     <div>
       <h1>Your Spotify Playlists</h1>
+      <button onClick={logout}>Logout</button>
       <ul>
         {playlists.map(pl => (
           <li key={pl.id}>{pl.name}</li>

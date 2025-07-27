@@ -29,6 +29,9 @@ function SignUp() {
     if (accessToken) {
       localStorage.setItem('access_token', accessToken);
       localStorage.setItem('refresh_token', refreshToken);
+
+      window.history.replaceState({}, document.title, "/dashboard");
+
       navigate('/dashboard');
     }
   }, []);
