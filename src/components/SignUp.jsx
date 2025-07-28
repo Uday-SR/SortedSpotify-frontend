@@ -16,7 +16,7 @@ function SignUp() {
   };
   
   const handleSpotifyLogin = () => {
-    window.location.href = "https://your-backend.vercel.app/login";
+    window.location.href = "https://sorted-spotify-backend.vercel.app/login";
   }
 
   const navigate = useNavigate();

@@ -35,7 +35,7 @@ function Dashboard() {
     if (!refreshToken) return;
 
     const interval = setInterval(() => {
-      fetch(`https://your-backend.vercel.app/refresh_token?refresh_token=${refreshToken}`)
+      fetch(`https://sorted-spotify-backend.vercel.app/refresh_token?refresh_token=${refreshToken}`)
         .then(res => res.json())
         .then(data => {
           if (data.access_token) {
@@ -65,7 +65,7 @@ function Dashboard() {
 
         if (res.status === 401 && refreshToken) {
       // Try refreshing token
-          const refreshRes = await fetch(`https://your-backend.vercel.app/refresh_token?refresh_token=${refreshToken}`);
+          const refreshRes = await fetch(`https://sorted-spotify-backend.vercel.app/refresh_token?refresh_token=${refreshToken}`);
           const data = await refreshRes.json();
           if (data.access_token) {
             localStorage.setItem("access_token", data.access_token);

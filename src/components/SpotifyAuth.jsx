@@ -5,7 +5,7 @@ export const getRefreshToken = async () => {
     return;
   }
 
-  const url = "https://your-backend.vercel.app/refresh_token";
+  const url = "https://sorted-spotify-backend.vercel.app/refresh_token";
 
   try {
     const res = await fetch(`${url}?refresh_token=${refreshToken}`);
