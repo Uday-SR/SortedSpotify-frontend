@@ -93,7 +93,16 @@ function Dashboard() {
       <button onClick={logout}>Logout</button>
       <ul>
         {playlists.map(pl => (
-          <li key={pl.id}>{pl.name}</li>
+          <li key={pl.id} style={{ marginBottom: '1rem', listStyle: 'none' }}>
+      <img
+        src={pl.images[0]?.url}
+        alt={pl.name}
+        style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }}
+      />
+      <div>
+        <strong>{pl.name}</strong> — {pl.tracks.total} tracks
+      </div>
+    </li>
         ))}
       </ul>
     </div>
