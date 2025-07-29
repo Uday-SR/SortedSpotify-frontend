@@ -13,7 +13,7 @@ function Dashboard() {
     navigate("/signup");
   };
 
-  // Step 1: Extract tokens from URL or localStorage
+  // Extract tokens from URL or localStorage
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const access_token = params.get("access_token") || localStorage.getItem("access_token");
@@ -30,7 +30,7 @@ function Dashboard() {
     setRefreshToken(refresh_token);
   }, [navigate]);
 
-  // Step 2: Refresh token every 50 minutes
+  // Refresh token every 50 minutes
   useEffect(() => {
     if (!refreshToken) return;
 
@@ -51,7 +51,7 @@ function Dashboard() {
     return () => clearInterval(interval);
   }, [refreshToken]);
 
-  // Step 3: Fetch user playlists using access_token
+  // Fetch user playlists using access_token
   useEffect(() => {
     if (!accessToken) return;
 

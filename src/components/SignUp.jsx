@@ -51,9 +51,9 @@ function SignUp() {
         </div>
       </header>
 
-      <hero className="hero">
+      <section className="hero">
         <h2>Sign In</h2>
-      </hero>
+      </section>
 
       <main className="main1">
 
