@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import "./App.css";
 
 function Dashboard() {
   const [accessToken, setAccessToken] = useState(null);
   const [refreshToken, setRefreshToken] = useState(null);
   const [playlists, setPlaylists] = useState([]);
+  
   const navigate = useNavigate();
 
   const logout = () => {
@@ -87,23 +89,104 @@ function Dashboard() {
 
   }, [accessToken]);
 
+  // Sorting dropdown Handling
+  const sortOptions = ["valence", "acousticness", "key", "danceablilty"];
+  const [tracks, setTracks] = useState([]);
+  const [selectedPlaylistId, setSelectedPlaylistId] = useState(null);
+  const [sortBy, setSortBy] = useState("valence");
+
+  useEffect(() => {
+    if (!selectedPlaylistId || !accessToken) return;
+
+    const fetchTracks = async () => {
+      try {
+        const res = await fetch(`https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+
+        const data = await res.json();
+
+        const trackItems = data.items
+          .filter(item => item.track && item.track.id)
+          .map(item => item.track);
+
+        const ids = trackItems.map(track => track.id).join(',');
+
+        const features = await fetch(`https://api.spotify.com/v1/audio-features?ids=${ids}`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
+        });
+
+         const featuresData = await features.json();
+
+        const enrichedTracks = trackItems.map(track => {
+          const feature = featuresData.audio_features.find(f => f.id === track.id);
+          return { ...track, feature};
+        });
+
+        setTracks(enrichedTracks);
+      } catch (err) {
+         console.log("error fetching track or audio features : ", err);
+      }
+
+      fetchTracks();
+    }
+  }, [selectedPlaylistId, accessToken]);
+
   return (
-    <div>
+    <div  className={darkMode ? 'app dark' : 'app'}>
+      <header>
+        <div className="navbar">
+      
+          <img src={sortyapp} alt="Logo" className="logo" />
+          <button onClick={toSignup} className="sortbtn">Sort Now</button>
+          <button onClick={() => setDarkMode(!darkMode)} className="sortbtn">
+              {darkMode ? <img src={light} alt="Logo" className="lightdarklogo" /> : <img src={dark} alt="Logo" className="lightdarklogo" />}
+            </button>
+                
+          <div className="option">≡</div>
+        </div>  
+      </header>
+
       <h1>Your Spotify Playlists</h1>
       <button onClick={logout}>Logout</button>
       <ul>
         {playlists.map(pl => (
-          <li key={pl.id} style={{ marginBottom: '1rem', listStyle: 'none' }}>
-      <img
-        src={pl.images[0]?.url}
-        alt={pl.name}
-        style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }}
-      />
-      <div>
-        <strong>{pl.name}</strong> — {pl.tracks.total} tracks
-      </div>
-    </li>
+          <li 
+            key={pl.id} 
+            style={{ marginBottom: '1rem', 
+            listStyle: 'none' }}
+            onClick={() => setSelectedPlaylistId(pl.id)}
+          >
+            <img
+              src={pl.images[0]?.url}
+              alt={pl.name}
+              style={{ width: '100px', height: '100px', objectFit: 'cover', borderRadius: '8px' }}
+            />
+            <div>
+              <strong>{pl.name}</strong> — {pl.tracks.total} tracks
+            </div>
+          
+
+            {selectedPlaylistId === pl.id && (
+              <div>
+                <strong>Sort tracks by : </strong>
+                <ul>
+                  {sortOptions.map(option => (
+                    <li 
+                      key={option}
+                      onClick={() => {
+                        setSortBy(option);
+                      }}
+                    >{option}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+          </li>
+
         ))}
+        
       </ul>
     </div>
   );
