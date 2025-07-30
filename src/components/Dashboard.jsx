@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import sortyapp from './assets/sortyapp.png';
+import light from './assets/light.png';
+import dark from './assets/dark.png';
 import "./App.css";
 
 function Dashboard() {
   const [accessToken, setAccessToken] = useState(null);
   const [refreshToken, setRefreshToken] = useState(null);
   const [playlists, setPlaylists] = useState([]);
+  const [darkMode, setDarkMode] = useState(false);
   
   const navigate = useNavigate();
 
@@ -123,38 +127,42 @@ function Dashboard() {
           return { ...track, feature};
         });
 
+        enrichedTracks.sort((a, b) => {
+          const aVal = a.feature?.[sortBy] ?? 0;
+          const bVal = b.feature?.[sortBy] ?? 0;
+          return bVal - aVal; // descending
+        });
+
         setTracks(enrichedTracks);
       } catch (err) {
          console.log("error fetching track or audio features : ", err);
       }
+    };
 
-      fetchTracks();
-    }
+    fetchTracks();
   }, [selectedPlaylistId, accessToken]);
 
   return (
-    <div  className={darkMode ? 'app dark' : 'app'}>
+    <div className={darkMode ? 'app dark' : 'app'}>
       <header>
         <div className="navbar">
-      
           <img src={sortyapp} alt="Logo" className="logo" />
           <button onClick={toSignup} className="sortbtn">Sort Now</button>
           <button onClick={() => setDarkMode(!darkMode)} className="sortbtn">
-              {darkMode ? <img src={light} alt="Logo" className="lightdarklogo" /> : <img src={dark} alt="Logo" className="lightdarklogo" />}
-            </button>
-                
+            <img src={darkMode ? light : dark} alt="Toggle Theme" className="lightdarklogo" />
+          </button>
           <div className="option">≡</div>
-        </div>  
+        </div>
       </header>
 
       <h1>Your Spotify Playlists</h1>
       <button onClick={logout}>Logout</button>
+
       <ul>
         {playlists.map(pl => (
-          <li 
-            key={pl.id} 
-            style={{ marginBottom: '1rem', 
-            listStyle: 'none' }}
+          <li
+            key={pl.id}
+            style={{ marginBottom: '1rem', listStyle: 'none' }}
             onClick={() => setSelectedPlaylistId(pl.id)}
           >
             <img
@@ -165,31 +173,46 @@ function Dashboard() {
             <div>
               <strong>{pl.name}</strong> — {pl.tracks.total} tracks
             </div>
-          
 
             {selectedPlaylistId === pl.id && (
-              <div>
-                <strong>Sort tracks by : </strong>
+              <div style={{ marginTop: "0.5rem" }}>
+                <strong>Sort tracks by:</strong>
                 <ul>
                   {sortOptions.map(option => (
-                    <li 
+                    <li
                       key={option}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation(); // prevent re-triggering playlist click
                         setSortBy(option);
                       }}
-                    >{option}</li>
+                      style={{
+                        cursor: "pointer",
+                        fontWeight: option === sortBy ? "bold" : "normal"
+                      }}
+                    >
+                      {option}
+                    </li>
                   ))}
                 </ul>
               </div>
             )}
-
           </li>
-
         ))}
-        
       </ul>
+
+      {selectedPlaylistId && (
+        <div style={{ marginTop: "2rem" }}>
+          <h2>Tracks (Sorted by {sortBy})</h2>
+          <ul>
+            {tracks.map(track => (
+              <li key={track.id}>
+                🎵 {track.name} by {track.artists.map(a => a.name).join(", ")} — {track.feature?.[sortBy] ?? "N/A"}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
-  );
-}
+  );}
 
 export default Dashboard;
