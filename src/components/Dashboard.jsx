@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import sortyapp from './assets/sortyapp.png';
-import light from './assets/light.png';
-import dark from './assets/dark.png';
-import "./App.css";
+import sortyapp from '../assets/sortyapp.png';
+import light from '../assets/light.png';
+import dark from '../assets/dark.png';
+import "../App.css";
 
 function Dashboard() {
   const navigate = useNavigate();
