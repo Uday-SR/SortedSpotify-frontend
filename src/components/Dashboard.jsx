@@ -123,6 +123,8 @@ function Dashboard() {
     fetchTracksAndFeatures();
   }, [selectedPlaylistId, accessToken, sortBy]);
 
+ 
+
   return (
     <div className={darkMode ? "app dark" : "app"}>
       <header>
@@ -176,26 +178,30 @@ function Dashboard() {
                 </ul>
               </div>
             )}
+
+            {selectedPlaylistId && (
+              <div style={{ marginTop: "2rem" }}>
+              <h2>Tracks (Sorted by {sortBy})</h2>
+              {isLoading ? (
+                <p>Loading tracks...</p>
+                ) : (
+                <ul>
+                  {tracks.map(track => (
+                    <li key={track.id}>
+                      {track.name} by {track.artists.map(a => a.name).join(", ")} — {track.feature?.[sortBy] ?? "N/A"}
+                    </li>
+                  ))}
+                </ul>
+              )}
+        </div>
+      )}
+
+
+            
           </li>
         ))}
       </ul>
 
-      {selectedPlaylistId && (
-        <div style={{ marginTop: "2rem" }}>
-          <h2>Tracks (Sorted by {sortBy})</h2>
-          {isLoading ? (
-            <p>Loading tracks...</p>
-          ) : (
-            <ul>
-              {tracks.map(track => (
-                <li key={track.id}>
-                  🎵 {track.name} by {track.artists.map(a => a.name).join(", ")} — {track.feature?.[sortBy] ?? "N/A"}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
     </div>
   );
 }
