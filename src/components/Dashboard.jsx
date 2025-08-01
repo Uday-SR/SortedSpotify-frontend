@@ -117,6 +117,11 @@ function Dashboard() {
         }
 
         const featuresData = await featuresRes.json();
+        
+        if (!featuresRes.ok) {
+          console.error("Audio features fetch failed:", featuresData?.error);
+          return; // 💥 STOP if error — avoid crashing on undefined `enriched`
+        }
 
         if (!featuresData || !Array.isArray(featuresData.audio_features)) {
           console.error("Missing or invalid audio features:", featuresData);
@@ -131,7 +136,7 @@ function Dashboard() {
 
           console.log("Enriched Tracks:", enriched);
         }   
-        
+
         enriched.sort((a, b) => (b.feature?.[sortBy] ?? 0) - (a.feature?.[sortBy] ?? 0));
 
         setTracks(enriched);
