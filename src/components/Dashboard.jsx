@@ -110,7 +110,7 @@ function Dashboard() {
         });
 
         console.log("Track fetch response status:", res.status);
-        
+
         if (!res.ok) {
           const errorText = await res.text();
           throw new Error(`Fetch failed with status ${res.status}: ${errorText}`);
@@ -119,7 +119,7 @@ function Dashboard() {
         const featuresData = await featuresRes.json();
 
         const enriched = rawTracks.map(track => {
-          const feature = featuresData.audio_features.find(f => f?.id === track.id);
+          const feature = featuresData.audio_features?.find(f => f?.id === track.id);
           return { ...track, feature };
         });
 
