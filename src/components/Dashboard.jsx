@@ -87,13 +87,18 @@ function Dashboard() {
   useEffect(() => {
     if (!selectedPlaylistId || !accessToken) return;
 
+    console.log("Access Token being used:", accessToken);
+
     const fetchTracksAndFeatures = async () => {
       setIsLoading(true);
       try {
+        debugger;
         const res = await fetch(`https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
         const data = await res.json();
+
+        console.log("data", data);
 
         const rawTracks = data.items
           .filter(item => item.track?.id)
@@ -103,6 +108,13 @@ function Dashboard() {
         const featuresRes = await fetch(`https://api.spotify.com/v1/audio-features?ids=${ids}`, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
+
+        console.log("Track fetch response status:", res.status);
+        
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Fetch failed with status ${res.status}: ${errorText}`);
+        }
 
         const featuresData = await featuresRes.json();
 
@@ -143,7 +155,11 @@ function Dashboard() {
         {playlists.map(pl => (
           <li
             key={pl.id}
-            onClick={() => setSelectedPlaylistId(pl.id)}
+            onClick={() => {
+                console.log("Selected playlist:", pl.id);
+                setSelectedPlaylistId(pl.id)
+              }
+            }
             style={{ marginBottom: '1rem', cursor: 'pointer' }}
           >
             <img
@@ -179,6 +195,13 @@ function Dashboard() {
               </div>
             )}
 
+            
+
+
+            
+          </li>
+        ))}
+
             {selectedPlaylistId && (
               <div style={{ marginTop: "2rem" }}>
               <h2>Tracks (Sorted by {sortBy})</h2>
@@ -195,11 +218,6 @@ function Dashboard() {
               )}
         </div>
       )}
-
-
-            
-          </li>
-        ))}
       </ul>
 
     </div>
