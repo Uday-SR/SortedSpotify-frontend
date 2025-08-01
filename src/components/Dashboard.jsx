@@ -118,11 +118,20 @@ function Dashboard() {
 
         const featuresData = await featuresRes.json();
 
-        const enriched = rawTracks.map(track => {
-          const feature = featuresData.audio_features?.find(f => f?.id === track.id);
-          return { ...track, feature };
-        });
+        if (!featuresData || !Array.isArray(featuresData.audio_features)) {
+          console.error("Missing or invalid audio features:", featuresData);
+        } else {
+          const enriched = rawTracks.map(track => {
+            const feature = featuresData.audio_features.find(f => f?.id === track.id);
+            if (!feature) {
+              console.warn("No matching feature found for track:", track.id);
+            }
+            return { ...track, feature };
+          });
 
+          console.log("Enriched Tracks:", enriched);
+        }   
+        
         enriched.sort((a, b) => (b.feature?.[sortBy] ?? 0) - (a.feature?.[sortBy] ?? 0));
 
         setTracks(enriched);
