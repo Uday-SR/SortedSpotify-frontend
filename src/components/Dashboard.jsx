@@ -84,48 +84,77 @@ function Dashboard() {
   }, [accessToken]);
 
   // Fetch tracks and enrich with audio features
-  useEffect(() => {
-    if (!selectedPlaylistId || !accessToken) return;
+const chunkArray = (array, size) => {
+  const result = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+};
 
-    const fetchTracksAndFeatures = async () => {
-      setIsLoading(true);
-      try {
-        const res = await axios.get(`https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`, {
-          headers: { Authorization: `Bearer ${accessToken}` }
-        });
+useEffect(() => {
+  if (!selectedPlaylistId || !accessToken) return;
 
-        const rawTracks = res.data.items
-          .filter(item => item.track?.id)
-          .map(item => item.track);
+  const fetchTracksAndFeatures = async () => {
+    setIsLoading(true);
+    try {
+      const res = await axios.get(`https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`, {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
 
-        const ids = rawTracks.map(track => track.id).join(',');
+      const rawTracks = res.data.items
+        .filter(item => item.track?.id)
+        .map(item => item.track);
 
-        const featuresRes = await axios.get(`https://api.spotify.com/v1/audio-features`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          params: { ids }
-        });
+      if (!rawTracks.length) {
+        console.warn("No valid tracks found in playlist.");
+        setIsLoading(false);
+        return;
+      }
 
-        const featuresData = featuresRes.data;
+      const idsChunks = chunkArray(rawTracks.map(track => track.id), 100);
 
-        if (!featuresData || !Array.isArray(featuresData.audio_features)) {
-          console.error("Invalid audio features:", featuresData);
-        } else {
-          const enriched = rawTracks.map(track => {
-            const feature = featuresData.audio_features.find(f => f?.id === track.id);
-            return { ...track, feature };
+      let allFeatures = [];
+
+      for (const chunk of idsChunks) {
+        try {
+          const featuresRes = await axios.get("https://api.spotify.com/v1/audio-features", {
+            headers: { Authorization: `Bearer ${accessToken}` },
+            params: { ids: chunk.join(",") }
           });
 
-          enriched.sort((a, b) => (b.feature?.[sortBy] ?? 0) - (a.feature?.[sortBy] ?? 0));
-          setTracks(enriched);
-        }
-      } catch (err) {
-        console.error("Error fetching track/audio features:", err);
-      }
-      setIsLoading(false);
-    };
+          if (!featuresRes.data || !Array.isArray(featuresRes.data.audio_features)) {
+            console.warn("Invalid response in chunk:", featuresRes.data);
+            continue;
+          }
 
-    fetchTracksAndFeatures();
-  }, [selectedPlaylistId, accessToken, sortBy]);
+          allFeatures = allFeatures.concat(featuresRes.data.audio_features);
+        } catch (chunkErr) {
+          console.error("Error fetching chunk:", chunkErr);
+        }
+      }
+
+      const enriched = rawTracks.map(track => {
+        const feature = allFeatures.find(f => f?.id === track.id);
+        return { ...track, feature };
+      });
+
+      enriched.sort((a, b) => (b.feature?.[sortBy] ?? 0) - (a.feature?.[sortBy] ?? 0));
+
+      setTracks(enriched);
+    } catch (err) {
+      if (err.response) {
+        console.error("Spotify API error:", err.response.status, err.response.data);
+      } else {
+        console.error("Track/audio feature fetch error:", err.message);
+      }
+    }
+
+    setIsLoading(false);
+  };
+
+  fetchTracksAndFeatures();
+}, [selectedPlaylistId, accessToken, sortBy]);
 
   return (
     <div className={darkMode ? "app dark" : "app"}>
