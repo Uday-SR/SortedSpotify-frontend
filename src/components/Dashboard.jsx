@@ -92,7 +92,6 @@ function Dashboard() {
     const fetchTracksAndFeatures = async () => {
       setIsLoading(true);
       try {
-        debugger;
         const res = await fetch(`https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
