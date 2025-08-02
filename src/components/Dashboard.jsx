@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import sortyapp from '../assets/sortyapp.png';
 import light from '../assets/light.png';
 import dark from '../assets/dark.png';
@@ -48,12 +47,11 @@ function Dashboard() {
 
     const interval = setInterval(async () => {
       try {
-        const res = await axios.get(`https://sorted-spotify-backend.vercel.app/refresh_token`, {
-          params: { refresh_token: refreshToken }
-        });
-        if (res.data.access_token) {
-          setAccessToken(res.data.access_token);
-          localStorage.setItem("access_token", res.data.access_token);
+        const res = await fetch(`https://sorted-spotify-backend.vercel.app/refresh_token?refresh_token=${refreshToken}`);
+        const data = await res.json();
+        if (data.access_token) {
+          setAccessToken(data.access_token);
+          localStorage.setItem("access_token", data.access_token);
         }
       } catch (err) {
         console.error("Token refresh failed", err);
@@ -69,14 +67,16 @@ function Dashboard() {
 
     const fetchPlaylists = async () => {
       try {
-        const res = await axios.get("https://api.spotify.com/v1/me/playlists", {
+        const res = await fetch("https://api.spotify.com/v1/me/playlists", {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
 
-        setPlaylists(res.data.items || []);
+        if (res.status === 401) return logout();
+
+        const data = await res.json();
+        setPlaylists(data.items || []);
       } catch (err) {
         console.error("Failed to fetch playlists", err);
-        if (err.response?.status === 401) logout();
       }
     };
 
@@ -87,37 +87,59 @@ function Dashboard() {
   useEffect(() => {
     if (!selectedPlaylistId || !accessToken) return;
 
+    console.log("Access Token being used:", accessToken);
+
     const fetchTracksAndFeatures = async () => {
       setIsLoading(true);
       try {
-        const res = await axios.get(`https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`, {
+        debugger;
+        const res = await fetch(`https://api.spotify.com/v1/playlists/${selectedPlaylistId}/tracks`, {
           headers: { Authorization: `Bearer ${accessToken}` }
         });
+        const data = await res.json();
 
-        const rawTracks = res.data.items
+        console.log("data", data);
+
+        const rawTracks = data.items
           .filter(item => item.track?.id)
           .map(item => item.track);
 
         const ids = rawTracks.map(track => track.id).join(',');
-
-        const featuresRes = await axios.get(`https://api.spotify.com/v1/audio-features`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          params: { ids }
+        const featuresRes = await fetch(`https://api.spotify.com/v1/audio-features?ids=${ids}`, {
+          headers: { Authorization: `Bearer ${accessToken}` }
         });
 
-        const featuresData = featuresRes.data;
+        console.log("Track fetch response status:", res.status);
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          throw new Error(`Fetch failed with status ${res.status}: ${errorText}`);
+        }
+
+        const featuresData = await featuresRes.json();
+
+        if (!featuresRes.ok) {
+          console.error("Audio features fetch failed:", featuresData?.error);
+          return;
+        }
 
         if (!featuresData || !Array.isArray(featuresData.audio_features)) {
-          console.error("Invalid audio features:", featuresData);
+          console.error("Missing or invalid audio features:", featuresData);
         } else {
           const enriched = rawTracks.map(track => {
             const feature = featuresData.audio_features.find(f => f?.id === track.id);
+            if (!feature) {
+              console.warn("No matching feature found for track:", track.id);
+            }
             return { ...track, feature };
           });
 
-          enriched.sort((a, b) => (b.feature?.[sortBy] ?? 0) - (a.feature?.[sortBy] ?? 0));
-          setTracks(enriched);
-        }
+          console.log("Enriched Tracks:", enriched);
+        }   
+
+        enriched.sort((a, b) => (b.feature?.[sortBy] ?? 0) - (a.feature?.[sortBy] ?? 0));
+
+        setTracks(enriched);
       } catch (err) {
         console.error("Error fetching track/audio features:", err);
       }
@@ -126,6 +148,8 @@ function Dashboard() {
 
     fetchTracksAndFeatures();
   }, [selectedPlaylistId, accessToken, sortBy]);
+
+ 
 
   return (
     <div className={darkMode ? "app dark" : "app"}>
@@ -145,7 +169,11 @@ function Dashboard() {
         {playlists.map(pl => (
           <li
             key={pl.id}
-            onClick={() => setSelectedPlaylistId(pl.id)}
+            onClick={() => {
+                console.log("Selected playlist:", pl.id);
+                setSelectedPlaylistId(pl.id)
+              }
+            }
             style={{ marginBottom: '1rem', cursor: 'pointer' }}
           >
             <img
@@ -180,26 +208,32 @@ function Dashboard() {
                 </ul>
               </div>
             )}
+
+            
+
+
+            
           </li>
         ))}
 
-        {selectedPlaylistId && (
-          <div style={{ marginTop: "2rem" }}>
-            <h2>Tracks (Sorted by {sortBy})</h2>
-            {isLoading ? (
-              <p>Loading tracks...</p>
-            ) : (
-              <ul>
-                {tracks.map(track => (
-                  <li key={track.id}>
-                    {track.name} by {track.artists.map(a => a.name).join(", ")} — {track.feature?.[sortBy] ?? "N/A"}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        )}
+            {selectedPlaylistId && (
+              <div style={{ marginTop: "2rem" }}>
+              <h2>Tracks (Sorted by {sortBy})</h2>
+              {isLoading ? (
+                <p>Loading tracks...</p>
+                ) : (
+                <ul>
+                  {tracks.map(track => (
+                    <li key={track.id}>
+                      {track.name} by {track.artists.map(a => a.name).join(", ")} — {track.feature?.[sortBy] ?? "N/A"}
+                    </li>
+                  ))}
+                </ul>
+              )}
+        </div>
+      )}
       </ul>
+
     </div>
   );
 }
